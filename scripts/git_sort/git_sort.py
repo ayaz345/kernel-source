@@ -107,7 +107,7 @@ class RepoURL(object):
 
 
     def __repr__(self):
-        return "%s" % (self.url,)
+        return f"{self.url}"
 
 
     def __str__(self):
@@ -136,10 +136,7 @@ class Head(object):
         A head with no url is considered out of tree. Any other head with a
         url is upstream of it.
         """
-        if self.repo_url == RepoURL(None):
-            return len(remotes)
-        else:
-            return remote_index[self]
+        return len(remotes) if self.repo_url == RepoURL(None) else remote_index[self]
 
 
     def __eq__(self, other):
@@ -159,16 +156,15 @@ class Head(object):
 
 
     def __repr__(self):
-        return "%s %s" % (repr(self.repo_url), self.rev,)
+        return f"{repr(self.repo_url)} {self.rev}"
 
 
     def __str__(self):
         url = str(self.repo_url)
         if self.rev == "master":
             return url
-        else:
-            result = "%s %s" % (url, self.rev,)
-            return result.strip()
+        result = f"{url} {self.rev}"
+        return result.strip()
 
 
 # a list of each remote head which is indexed by this script
@@ -291,7 +287,7 @@ def get_heads(repo):
         except KeyError:
             continue
 
-        lhs = "refs/heads/%s" % (head.rev,)
+        lhs = f"refs/heads/{head.rev}"
         rhs = None
         nb = len(remote.fetch_refspecs)
         if nb == 0:
@@ -352,7 +348,7 @@ def get_history(repo, repo_heads):
             raise GSError("git log exited with an error:\n" +
                           "\n".join(history[head]))
 
-        processed.append("^%s" % (rev,))
+        processed.append(f"^{rev}")
 
     return history
 
@@ -411,19 +407,17 @@ class Cache(object):
         try:
             os.stat(cache_path)
         except OSError as e:
-            if e.errno == 2:
-                if write_enable:
-                    if not os.path.isdir(cache_dir):
-                        try:
-                            os.makedirs(cache_dir)
-                        except OSError as err:
-                            raise CError("Could not create cache directory:\n" +
-                                         str(err))
-                else:
-                    raise CAbsent
-            else:
+            if e.errno != 2:
                 raise
 
+            if not write_enable:
+                raise CAbsent
+            if not os.path.isdir(cache_dir):
+                try:
+                    os.makedirs(cache_dir)
+                except OSError as err:
+                    raise CError("Could not create cache directory:\n" +
+                                 str(err))
         if write_enable:
             # In case there is already a database file of an unsupported format,
             # one would hope that with flag="n" a new database would be created
@@ -580,20 +574,20 @@ class SortIndex(object):
         except CNeedsRebuild:
             needs_rebuild = True
         except CError as err:
-            print("Error: %s" % (err,), file=sys.stderr)
+            print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)
 
         try:
             repo_heads = get_heads(repo)
         except GSError as err:
-            print("Error: %s" % (err,), file=sys.stderr)
+            print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)
 
         if needs_rebuild or list(history.keys()) != list(repo_heads.items()):
             try:
                 history = get_history(repo, repo_heads)
             except GSError as err:
-                print("Error: %s" % (err,), file=sys.stderr)
+                print(f"Error: {err}", file=sys.stderr)
                 sys.exit(1)
             try:
                 with Cache(write_enable=True) as cache:
@@ -601,7 +595,7 @@ class SortIndex(object):
                         [((head, repo_heads[head],), log,)
                          for head, log in history.items()])
             except CError as err:
-                print("Error: %s" % (err,), file=sys.stderr)
+                print(f"Error: {err}", file=sys.stderr)
                 sys.exit(1)
             self.history = history
         else:
@@ -651,20 +645,17 @@ class SortIndex(object):
 
         indexes, tags = self.version_indexes
         i = bisect.bisect_left(indexes, index)
-        if i == len(tags):
-            # not yet part of a tagged release
-            m = re.search("v([0-9]+)\.([0-9]+)(|-rc([0-9]+))$", tags[-1])
-            if m:
-                # Post-release commit with no rc, it'll be rc1
-                if m.group(3) == "":
-                    nexttag = "v%s.%d-rc1" % (m.group(1), int(m.group(2)) + 1)
-                else:
-                    nexttag = "v%s.%d or v%s.%s-rc%d (next release)" % \
-                              (m.group(1), int(m.group(2)), m.group(1),
-                               m.group(2), int(m.group(4)) + 1)
-            return nexttag
-        else:
+        if i != len(tags):
             return tags[i]
+        if m := re.search("v([0-9]+)\.([0-9]+)(|-rc([0-9]+))$", tags[-1]):
+                # Post-release commit with no rc, it'll be rc1
+            nexttag = (
+                "v%s.%d-rc1" % (m[1], int(m[2]) + 1)
+                if m[3] == ""
+                else "v%s.%d or v%s.%s-rc%d (next release)"
+                % (m[1], int(m[2]), m[1], m[2], int(m[4]) + 1)
+            )
+        return nexttag
 
 
 if __name__ == "__main__":
@@ -717,23 +708,20 @@ if __name__ == "__main__":
         except CNeedsRebuild:
             needs_rebuild = True
         except CError as err:
-            print("Error: %s" % (err,), file=sys.stderr)
+            print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)
 
         try:
             repo_heads = get_heads(repo)
         except GSError as err:
-            print("Error: %s" % (err,), file=sys.stderr)
+            print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)
         if not needs_rebuild and list(history.keys()) != list(repo_heads.items()):
             needs_rebuild = True
         print("Current heads (version %d):" % Cache.version)
         pprint.pprint(list(repo_heads.items()))
-        if needs_rebuild:
-            action = "Will"
-        else:
-            action = "Will not"
-        print("%s rebuild history" % (action,))
+        action = "Will" if needs_rebuild else "Will not"
+        print(f"{action} rebuild history")
         sys.exit(0)
 
     index = SortIndex(repo)

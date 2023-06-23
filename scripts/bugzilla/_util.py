@@ -7,6 +7,4 @@ def listify(val):
     into 1-element lists"""
     if val is None:
         return val
-    if isinstance(val, list):
-        return val
-    return [val]
+    return val if isinstance(val, list) else [val]

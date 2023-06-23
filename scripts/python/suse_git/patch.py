@@ -12,16 +12,12 @@ class PatchException(Exception):
         self._errors = errors
 
     def errors(self, error=None):
-        count = 0
         if error is None:
             return len(self._errors)
-        for err in self._errors:
-            if isinstance(err, error):
-                count += 1
-        return count
+        return sum(1 for err in self._errors if isinstance(err, error))
 
     def __str__(self):
-        return "\n".join("** %s" % str(x) for x in self._errors)
+        return "\n".join(f"** {str(x)}" for x in self._errors)
 
     def __repr__(self):
         ret = "%d errors:\n" % len(self._errors)
@@ -30,11 +26,7 @@ class PatchException(Exception):
 
     def error_message(self, fn):
         ret = "ERROR: Problems encountered in "
-        if fn:
-            ret += "`%s'\n" % fn
-        else:
-            ret += "input\n"
-
+        ret += "`%s'\n" % fn if fn else "input\n"
         ret += str(self)
 
         return ret

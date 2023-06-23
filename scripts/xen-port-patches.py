@@ -82,13 +82,8 @@ def decorateSubject(subject):
 	m = re.search(r"^(Subject:\s*(?:\[.*\])?\s*)(.*)", subject);
 	if not m:
 		return subject
-	if re.search(r"^[^\s]*:[^:]*$", m.group(2)):
-		# subsystem: text -> xen/subsystem: text
-		tag = "xen/"
-	else:
-		# text -> xen: text
-		tag = "xen: "
-	return m.group(1) + tag + m.group(2) + "\n"
+	tag = "xen/" if re.search(r"^[^\s]*:[^:]*$", m[2]) else "xen: "
+	return m[1] + tag + m[2] + "\n"
 
 def mayCreatePatch(fname, repls):
 	"Try to apply the replacement rules to fname"

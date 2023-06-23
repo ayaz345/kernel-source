@@ -34,15 +34,16 @@ class TestQuiltMode(unittest.TestCase):
         tree.insert("README", 
                     self.repo.create_blob("NAME = Roaring Lionus\n"),
                     pygit2.GIT_FILEMODE_BLOB)
-        self.commits = []
-        self.commits.append(self.repo.create_commit(
-            "refs/heads/mainline",
-            author,
-            committer,
-            "Linux 4.9",
-            tree.write(),
-            []
-        ))
+        self.commits = [
+            self.repo.create_commit(
+                "refs/heads/mainline",
+                author,
+                committer,
+                "Linux 4.9",
+                tree.write(),
+                [],
+            )
+        ]
         self.repo.create_tag("v4.9", self.commits[-1], pygit2.GIT_REF_OID,
                              committer, "Linux 4.9")
 
@@ -133,23 +134,23 @@ Signed-off-by: Ingo Molnar <mingo@kernel.org>
         patch_dir = os.path.join(self.ks_dir, "patches.suse")
         os.mkdir(patch_dir)
         os.chdir(patch_dir)
-        with open(os.path.join(self.ks_dir, "series.conf"), mode="w") as f:
-            f.write(
-"""# Kernel patches configuration file
+            with open(os.path.join(self.ks_dir, "series.conf"), mode="w") as f:
+                f.write(
+        """# Kernel patches configuration file
 
 	########################################################
 	# sorted patches
 	########################################################
 """)
-            for commit, tag in (
-                (self.commits[0], "v4.9",),
-                (self.commits[1], "v4.10-rc5",),
-            ):
-                f.write("\tpatches.suse/%s\n" % (
-                    tests.support.format_patch(self.repo.get(commit),
-                                               mainline=tag),))
-            f.write(
-"""
+                for commit, tag in (
+                    (self.commits[0], "v4.9",),
+                    (self.commits[1], "v4.10-rc5",),
+                ):
+                    f.write("\tpatches.suse/%s\n" % (
+                        tests.support.format_patch(self.repo.get(commit),
+                                                   mainline=tag),))
+                f.write(
+        """
 	########################################################
 	# end of sorted patches
 	########################################################
@@ -204,29 +205,39 @@ Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
         # test qgoto
         subprocess.check_call(
-            ". %s; qgoto %s" % (qm_path, str(self.commits[0])), shell=True,
-            stdout=subprocess.DEVNULL, executable="/bin/bash")
+            f". {qm_path}; qgoto {str(self.commits[0])}",
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            executable="/bin/bash",
+        )
 
         # test qdupcheck
         try:
             subprocess.check_output(
-                ". %s; qdupcheck %s" % (qm_path, str(self.commits[1])),
-                shell=True, executable="/bin/bash")
+                f". {qm_path}; qdupcheck {str(self.commits[1])}",
+                shell=True,
+                executable="/bin/bash",
+            )
         except subprocess.CalledProcessError as err:
             self.assertEqual(err.returncode, 1)
             self.assertEqual(err.output.decode().splitlines()[-1].strip(),
                              "patches.suse/Linux-4.10-rc5.patch")
         else:
             self.assertTrue(False)
-        
+
         subprocess.check_call(
-            ". %s; qgoto %s" % (qm_path, str(self.commits[1])), shell=True,
-            stdout=subprocess.DEVNULL, executable="/bin/bash")
+            f". {qm_path}; qgoto {str(self.commits[1])}",
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            executable="/bin/bash",
+        )
 
         try:
             subprocess.check_output(
-                ". %s; qdupcheck %s" % (qm_path, str(self.commits[1])),
-                shell=True, executable="/bin/bash")
+                f". {qm_path}; qdupcheck {str(self.commits[1])}",
+                shell=True,
+                executable="/bin/bash",
+            )
         except subprocess.CalledProcessError as err:
             self.assertEqual(err.returncode, 1)
             self.assertEqual(err.output.decode().splitlines()[-1].strip(),
@@ -236,12 +247,16 @@ Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
         # import commits[2]
         subprocess.check_call(
-            ". %s; qgoto %s" % (qm_path, str(self.commits[2])), shell=True,
-            executable="/bin/bash")
+            f". {qm_path}; qgoto {str(self.commits[2])}",
+            shell=True,
+            executable="/bin/bash",
+        )
         subprocess.check_call(
-            """. %s; qcp -r "bsc#1077761" -d patches.suse %s""" % (
-                qm_path, str(self.commits[2])),
-            shell=True, stdout=subprocess.DEVNULL, executable="/bin/bash")
+            f""". {qm_path}; qcp -r "bsc#1077761" -d patches.suse {str(self.commits[2])}""",
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            executable="/bin/bash",
+        )
 
         retval = subprocess.check_output(("quilt", "--quiltrc", "-", "next",))
         name = "patches.suse/KVM-arm-arm64-vgic-v3-Add-accessors-for-the-ICH_APxR.patch"
@@ -293,12 +308,17 @@ Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
         # import commits[3]
         subprocess.check_call(
-            ". %s; qgoto %s" % (qm_path, str(self.commits[3])), shell=True,
-            stdout=subprocess.DEVNULL, executable="/bin/bash")
+            f". {qm_path}; qgoto {str(self.commits[3])}",
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            executable="/bin/bash",
+        )
         subprocess.check_call(
-            """. %s; qcp -r "bsc#123" -d patches.suse %s""" % (
-                qm_path, str(self.commits[3])),
-            shell=True, stdout=subprocess.DEVNULL, executable="/bin/bash")
+            f""". {qm_path}; qcp -r "bsc#123" -d patches.suse {str(self.commits[3])}""",
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            executable="/bin/bash",
+        )
 
         subprocess.check_call(("quilt", "--quiltrc", "-", "push",),
                               stdout=subprocess.DEVNULL)
@@ -320,9 +340,9 @@ Signed-off-by: Ingo Molnar <mingo@kernel.org>
             content = f.readlines()
 
         content2 = list(content)
-        middle = int(len(content2) / 2)
+        middle = len(content2) // 2
         content2[middle], content2[middle + 1] = \
-            content2[middle + 1], content2[middle]
+                content2[middle + 1], content2[middle]
 
         with open("series.conf", mode="w") as f:
             f.writelines(content2)
@@ -382,9 +402,14 @@ Signed-off-by: Ingo Molnar <mingo@kernel.org>
         subprocess.check_call(("git", "checkout", "-q", "master",))
         shutil.rmtree("tmp/current")
         subprocess.check_call(
-            ("git", "config", "--add", "mergetool.git-sort.cmd",
-             "%s $LOCAL $BASE $REMOTE $MERGED" % (
-                 os.path.join(lib.libdir(), "merge_tool.py"),),))
+            (
+                "git",
+                "config",
+                "--add",
+                "mergetool.git-sort.cmd",
+                f'{os.path.join(lib.libdir(), "merge_tool.py")} $LOCAL $BASE $REMOTE $MERGED',
+            )
+        )
         subprocess.check_call(("git", "config", "--add",
                                "mergetool.git-sort.trustexitcode", "true",))
         retval = subprocess.call(("git", "merge", "other",),
@@ -421,19 +446,19 @@ class TestMergeTool(unittest.TestCase):
         tree = self.repo.TreeBuilder()
 
         k_org_canon_prefix = "git://git.kernel.org/pub/scm/linux/kernel/git/"
-        self.mainline_repo = k_org_canon_prefix + "torvalds/linux.git"
+        self.mainline_repo = f"{k_org_canon_prefix}torvalds/linux.git"
         self.repo.remotes.create("origin", self.mainline_repo)
 
-        self.commits = {}
-        self.commits["mainline 0"] = self.repo.create_commit(
-            "refs/heads/mainline",
-            author,
-            committer,
-            "mainline 0\n\nlog",
-            tree.write(),
-            []
-        )
-
+        self.commits = {
+            "mainline 0": self.repo.create_commit(
+                "refs/heads/mainline",
+                author,
+                committer,
+                "mainline 0\n\nlog",
+                tree.write(),
+                [],
+            )
+        }
         self.commits["mainline 1"] = self.repo.create_commit(
             "refs/heads/mainline",
             author,
@@ -462,9 +487,14 @@ class TestMergeTool(unittest.TestCase):
 
         pygit2.init_repository("./")
         subprocess.check_call(
-            ("git", "config", "--add", "mergetool.git-sort.cmd",
-             "%s $LOCAL $BASE $REMOTE $MERGED" % (
-                 os.path.join(lib.libdir(), "merge_tool.py"),),))
+            (
+                "git",
+                "config",
+                "--add",
+                "mergetool.git-sort.cmd",
+                f'{os.path.join(lib.libdir(), "merge_tool.py")} $LOCAL $BASE $REMOTE $MERGED',
+            )
+        )
         subprocess.check_call(("git", "config", "--add",
                                "mergetool.git-sort.trustexitcode", "true",))
 
@@ -479,12 +509,14 @@ class TestMergeTool(unittest.TestCase):
 
 
     def test_moved(self):
-        names = {}
+        names = {
+            "mainline 0": tests.support.format_patch(
+                self.repo.get(self.commits["mainline 0"]),
+                mainline="v0",
+                directory=self.patch_dir,
+            )
+        }
 
-        # local branch
-        names["mainline 0"] = tests.support.format_patch(
-            self.repo.get(self.commits["mainline 0"]), mainline="v0",
-            directory=self.patch_dir)
         names["mainline 1"] = tests.support.format_patch(
             self.repo.get(self.commits["mainline 1"]),
             directory=self.patch_dir)
@@ -589,22 +621,22 @@ class TestQCP(unittest.TestCase):
         tree.insert("driver.c", 
                     self.repo.create_blob("#include <bad.h>\n"),
                     pygit2.GIT_FILEMODE_BLOB)
-        self.commits = []
-        self.commits.append(self.repo.create_commit(
-            "refs/heads/mainline",
-            author,
-            committer,
-            """Add a very small module
+        self.commits = [
+            self.repo.create_commit(
+                "refs/heads/mainline",
+                author,
+                committer,
+                """Add a very small module
 
 ... which was not tested.
 
 Signed-off-by: Author One <author1@example.com>
 Signed-off-by: Maintainer One <maintainer@example.com>
 """,
-            tree.write(),
-            []
-        ))
-
+                tree.write(),
+                [],
+            )
+        ]
         tree.insert("driver.c", 
                     self.repo.create_blob("#include <linux/module.h>\n"),
                     pygit2.GIT_FILEMODE_BLOB)
@@ -660,20 +692,20 @@ Signed-off-by: Maintainer One <maintainer@example.com>
         patch_dir = os.path.join(self.ks_dir, "patches.suse")
         os.mkdir(patch_dir)
         os.chdir(patch_dir)
-        with open(os.path.join(self.ks_dir, "series.conf"), mode="w") as f:
-            f.write(
-"""# Kernel patches configuration file
+            with open(os.path.join(self.ks_dir, "series.conf"), mode="w") as f:
+                f.write(
+        """# Kernel patches configuration file
 
 	########################################################
 	# sorted patches
 	########################################################
 """)
-            f.write("\tpatches.suse/%s\n" % (
-                tests.support.format_patch(self.repo.get(self.commits[0]),
-                                           mainline="v4.9",
-                                           references="bsc#123"),))
-            f.write(
-"""
+                f.write("\tpatches.suse/%s\n" % (
+                    tests.support.format_patch(self.repo.get(self.commits[0]),
+                                               mainline="v4.9",
+                                               references="bsc#123"),))
+                f.write(
+        """
 	########################################################
 	# end of sorted patches
 	########################################################
@@ -709,12 +741,17 @@ Signed-off-by: Maintainer One <maintainer@example.com>
 
         # import commits[1]
         subprocess.check_call(
-            ". %s; qgoto %s" % (qm_path, str(self.commits[1])), shell=True,
-            stdout=subprocess.DEVNULL, executable="/bin/bash")
+            f". {qm_path}; qgoto {str(self.commits[1])}",
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            executable="/bin/bash",
+        )
         subprocess.check_call(
-            """. %s; qcp -f %s""" % (
-                qm_path, str(self.commits[1])),
-            shell=True, stdout=subprocess.DEVNULL, executable="/bin/bash")
+            f""". {qm_path}; qcp -f {str(self.commits[1])}""",
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            executable="/bin/bash",
+        )
 
         retval = subprocess.check_output(("quilt", "--quiltrc", "-", "next",))
         name = "patches.suse/Fix-the-very-small-module.patch"

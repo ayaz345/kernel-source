@@ -23,7 +23,7 @@ import sys
 try:
     from pygit2 import *
 except ImportError as err:
-    print("Error: %s" % (err,), file=sys.stderr)
+    print(f"Error: {err}", file=sys.stderr)
     print("Please install the \"pygit2\" python3 module. For more details, "
           "please refer to the \"Installation Requirements\" section of "
           "\"scripts/git_sort/README.md\".", file=sys.stderr)

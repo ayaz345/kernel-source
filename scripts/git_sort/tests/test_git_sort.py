@@ -276,7 +276,7 @@ class TestCache(unittest.TestCase):
                 parent
             )
             parent = [cid]
-            commits.append("%s %s" % (str(cid), subject,))
+            commits.append(f"{str(cid)} {subject}")
         self.commits = commits
 
 

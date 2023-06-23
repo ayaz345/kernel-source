@@ -30,8 +30,7 @@ class _BugzillaSession(object):
         self._use_auth_bearer = False
 
         if self._scheme not in ["http", "https"]:
-            raise Exception("Invalid URL scheme: %s (%s)" % (
-                self._scheme, url))
+            raise Exception(f"Invalid URL scheme: {self._scheme} ({url})")
 
         self._session = requests_session
         if not self._session:
@@ -45,8 +44,7 @@ class _BugzillaSession(object):
 
         if is_redhat_bugzilla and self._api_key:
             self._use_auth_bearer = True
-            self._session.headers["Authorization"] = (
-                "Bearer %s" % self._api_key)
+            self._session.headers["Authorization"] = f"Bearer {self._api_key}"
 
     def _get_timeout(self):
         # Default to 5 minutes. This is longer than bugzilla.redhat.com's
@@ -83,8 +81,7 @@ class _BugzillaSession(object):
             # with query param taking preference.
             return {"Bugzilla_api_key": self._api_key}
 
-        token = self._tokencache.get_value(self._url)
-        if token:
+        if token := self._tokencache.get_value(self._url):
             return {"Bugzilla_token": token}
 
         return {}

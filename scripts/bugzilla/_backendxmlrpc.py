@@ -91,8 +91,7 @@ class _BugzillaXMLRPCTransport(Transport):
         # pylint: disable=attribute-defined-outside-init
         self.verbose = verbose
 
-        url = "%s://%s%s" % (self.__bugzillasession.get_scheme(),
-                host, handler)
+        url = f"{self.__bugzillasession.get_scheme()}://{host}{handler}"
 
         # xmlrpclib fails to escape \r
         request_body = request_body.replace(b'\r', b'&#xd;')
@@ -121,12 +120,7 @@ class _BugzillaXMLRPCProxy(ServerProxy, object):
         authparams = self.__bugzillasession.get_auth_params()
         authparams.update(newparams)
 
-        # pylint: disable=no-member
-        ret = ServerProxy._ServerProxy__request(
-            self, methodname, (authparams,))
-        # pylint: enable=no-member
-
-        return ret
+        return ServerProxy._ServerProxy__request(self, methodname, (authparams,))
 
 
 class _BackendXMLRPC(_BackendBase):

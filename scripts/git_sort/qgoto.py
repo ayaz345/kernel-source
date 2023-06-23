@@ -53,7 +53,7 @@ if __name__ == "__main__":
     try:
         (name, delta,) = lib.sequence_insert(series, args.rev, top)
     except exc.KSException as err:
-        print("Error: %s" % (err,), file=sys.stderr)
+        print(f"Error: {err}", file=sys.stderr)
         sys.exit(1)
 
     if delta > 0:

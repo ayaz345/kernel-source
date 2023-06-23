@@ -81,9 +81,8 @@ if __name__ == "__main__":
               (len(added), len(removed),))
     if moved:
         print("%d commits changed section from base to remote." % (len(moved),))
-    dup_add_nb = len(local[3] & added)
     dup_rem_nb = len(removed) - len(local[3] & removed)
-    if dup_add_nb:
+    if dup_add_nb := len(local[3] & added):
         print("Warning: %d commits added in remote and already present in "
               "local, ignoring." % (dup_add_nb,))
     if dup_rem_nb:
@@ -91,7 +90,7 @@ if __name__ == "__main__":
               "ignoring." % (dup_rem_nb,))
 
     filter_set = removed | moved
-    inside = [line for line in local[1] if not line.strip() in filter_set]
+    inside = [line for line in local[1] if line.strip() not in filter_set]
     try:
         input_entries = lib.parse_inside(index, inside, False)
         for name in added - local[3] | moved:
@@ -99,13 +98,13 @@ if __name__ == "__main__":
             entry.from_patch(index, name, lib.git_sort.oot, True)
             input_entries.append(entry)
     except exc.KSError as err:
-        print("Error: %s" % (err,), file=sys.stderr)
+        print(f"Error: {err}", file=sys.stderr)
         sys.exit(1)
 
     try:
         sorted_entries = lib.series_sort(index, input_entries)
     except exc.KSError as err:
-        print("Error: %s" % (err,), file=sys.stderr)
+        print(f"Error: {err}", file=sys.stderr)
         sys.exit(1)
     output = lib.series_format(sorted_entries)
 
@@ -123,17 +122,17 @@ if __name__ == "__main__":
         cmd = "merge"
         retval = subprocess.call([cmd, merged_path, base_path, remote_path])
     except OSError as e:
-        if e.errno == 2:
-            print("Error: could not run `%s`. Please make sure it is "
-                  "installed (from the \"rcs\" package)." % (cmd,),
-                  file=sys.stderr)
-            sys.exit(1)
-        else:
+        if e.errno != 2:
             raise
+        print("Error: could not run `%s`. Please make sure it is "
+              "installed (from the \"rcs\" package)." % (cmd,),
+              file=sys.stderr)
+        sys.exit(1)
     if retval != 0:
         name = "%s.merged%d" % (merged_path, os.getpid(),)
-        print("Warning: conflicts outside of sorted section, leaving merged "
-              "result in %s" % (name,))
+        print(
+            f"Warning: conflicts outside of sorted section, leaving merged result in {name}"
+        )
         shutil.copy(merged_path, name)
         result = 1
 
@@ -141,7 +140,7 @@ if __name__ == "__main__":
     try:
         lib.update_tags(index, to_update)
     except exc.KSError as err:
-        print("Error: %s" % (err,), file=sys.stderr)
+        print(f"Error: {err}", file=sys.stderr)
         result = 1
     else:
         for entry in to_update:

@@ -69,7 +69,7 @@ class _BugzillaTokenCache(object):
                 self.tokenfile.write(tokenfile)
 
     def __repr__(self):
-        return '<Bugzilla Token Cache :: %s>' % self.value
+        return f'<Bugzilla Token Cache :: {self.value}>'
 
 
 class _BugzillaServerProxy(ServerProxy, object):
@@ -120,7 +120,7 @@ class _RequestsTransport(Transport):
         # scheme to request
         self.scheme = urlparse(url)[0]
         if self.scheme not in ["http", "https"]:
-            raise Exception("Invalid URL scheme: %s (%s)" % (self.scheme, url))
+            raise Exception(f"Invalid URL scheme: {self.scheme} ({url})")
 
         self.use_https = self.scheme == 'https'
 
@@ -188,7 +188,7 @@ class _RequestsTransport(Transport):
 
     def request(self, host, handler, request_body, verbose=0):
         self.verbose = verbose
-        url = "%s://%s%s" % (self.scheme, host, handler)
+        url = f"{self.scheme}://{host}{handler}"
 
         # xmlrpclib fails to escape \r
         request_body = request_body.replace(b'\r', b'&#xd;')

@@ -104,11 +104,11 @@ class TestSeriesSort(unittest.TestCase):
         )
 
         k_org_canon_prefix = "git://git.kernel.org/pub/scm/linux/kernel/git/"
-        origin_repo = k_org_canon_prefix + "torvalds/linux.git"
+        origin_repo = f"{k_org_canon_prefix}torvalds/linux.git"
         self.repo.remotes.create("origin", origin_repo)
         self.repo.references.create("refs/remotes/origin/master", m2)
 
-        net_repo = k_org_canon_prefix + "davem/net.git"
+        net_repo = f"{k_org_canon_prefix}davem/net.git"
         self.repo.remotes.create("net", net_repo)
         self.repo.references.create("refs/remotes/net/master", n2)
 
@@ -284,28 +284,28 @@ class TestFromPatch(unittest.TestCase):
         tree = self.repo.TreeBuilder()
 
         k_org_canon_prefix = "git://git.kernel.org/pub/scm/linux/kernel/git/"
-        self.mainline_repo = k_org_canon_prefix + "torvalds/linux.git"
+        self.mainline_repo = f"{k_org_canon_prefix}torvalds/linux.git"
         self.repo.remotes.create("origin", self.mainline_repo)
-        self.net_next_repo = k_org_canon_prefix + "davem/net-next.git"
+        self.net_next_repo = f"{k_org_canon_prefix}davem/net-next.git"
         self.repo.remotes.create("net-next", self.net_next_repo)
-        self.net_repo = k_org_canon_prefix + "davem/net.git"
-        self.rdma_repo = k_org_canon_prefix + "rdma/rdma.git"
+        self.net_repo = f"{k_org_canon_prefix}davem/net.git"
+        self.rdma_repo = f"{k_org_canon_prefix}rdma/rdma.git"
         self.repo.remotes.create("rdma", self.rdma_repo)
-        self.dledford_repo = k_org_canon_prefix + "dledford/rdma.git"
+        self.dledford_repo = f"{k_org_canon_prefix}dledford/rdma.git"
         self.repo.remotes.create("dledford/rdma", self.dledford_repo)
-        self.nf_repo = k_org_canon_prefix + "netfilter/nf.git"
+        self.nf_repo = f"{k_org_canon_prefix}netfilter/nf.git"
         self.repo.remotes.create("netfilter/nf", self.nf_repo)
 
-        self.commits = {}
-        self.commits["mainline 0"] = self.repo.create_commit(
-            "refs/heads/mainline",
-            author,
-            committer,
-            "mainline 0\n\nlog",
-            tree.write(),
-            []
-        )
-
+        self.commits = {
+            "mainline 0": self.repo.create_commit(
+                "refs/heads/mainline",
+                author,
+                committer,
+                "mainline 0\n\nlog",
+                tree.write(),
+                [],
+            )
+        }
         self.commits["net-next 0"] = self.repo.create_commit(
             "refs/heads/net-next",
             author,
@@ -436,10 +436,10 @@ class TestFromPatch(unittest.TestCase):
                     self.assertEqual(line[len(tag):-1], value)
 
 
-    def _transform_arg(move_upstream):
-        if move_upstream is None:
+    def _transform_arg(self):
+        if self is None:
             return [[], ["-u"]]
-        elif move_upstream:
+        elif self:
             return [["-u"]]
         else:
             return [[]]

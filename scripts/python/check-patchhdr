@@ -26,10 +26,7 @@ if __name__ == "__main__":
 
     errors = 0
     if options.stdin:
-        if args:
-            fn = args[0]
-        else:
-            fn = "<stdin>"
+        fn = args[0] if args else "<stdin>"
         try:
             checker = header.Checker(sys.stdin, options.update, fn)
         except header.HeaderException as e:
@@ -39,9 +36,8 @@ if __name__ == "__main__":
     else:
         for fn in args:
             try:
-                f = open(fn)
-                checker = header.Checker(f, options.update, fn)
-                f.close()
+                with open(fn) as f:
+                    checker = header.Checker(f, options.update, fn)
             except header.HeaderException as e:
                 print(e.error_message(fn), file=sys.stderr)
                 if not fn.startswith("patches.xen/"):

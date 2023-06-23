@@ -76,7 +76,7 @@ class Patch(object):
 
         Returns a list with the value for each instance of the tag.
         """
-        start = "%s: " % (tag.lower(),)
+        start = f"{tag.lower()}: "
         return [line[len(start):].strip()
                 for line in self.head
                 if line.lower().startswith(start)]
@@ -93,7 +93,7 @@ class Patch(object):
 
         if len(self.get(tag)):
             self.modified = True
-            start = "%s: " % (tag.lower(),)
+            start = f"{tag.lower()}: "
             self.head = [line
                          for line in self.head
                          if not line.lower().startswith(start)]
@@ -110,7 +110,7 @@ class Patch(object):
 
         if len(self.get(tag)):
             self.modified = True
-            start = "%s: " % (tag.lower(),)
+            start = f"{tag.lower()}: "
 
             def change_value(line):
                 if line.lower().startswith(start):

@@ -29,7 +29,7 @@ def _default_cache_location(filename):
     Determine default location for passed xdg filename.
     example: ~/.cache/python-bugzilla/bugzillarc
     """
-    return os.path.expanduser("~/.cache/python-bugzilla/%s" % filename)
+    return os.path.expanduser(f"~/.cache/python-bugzilla/{filename}")
 
 
 class _BugzillaRCFile(object):
@@ -38,12 +38,11 @@ class _BugzillaRCFile(object):
     """
     @staticmethod
     def get_default_configpaths():
-        paths = [
+        return [
             '/etc/bugzillarc',
             '~/.bugzillarc',
             '~/.config/python-bugzilla/bugzillarc',
         ]
-        return paths
 
     def __init__(self):
         self._cfg = None
@@ -55,8 +54,7 @@ class _BugzillaRCFile(object):
                        listify(configpaths or [])]
 
         cfg = configparser.ConfigParser()
-        read_files = cfg.read(configpaths)
-        if read_files:
+        if read_files := cfg.read(configpaths):
             log.info("Found bugzillarc files: %s", read_files)
 
         self._cfg = cfg
@@ -85,10 +83,12 @@ class _BugzillaRCFile(object):
         for sectionhost in sorted(self._cfg.sections()):
             # If the section is just a hostname, make it match
             # If the section has a / in it, do a substring match
-            if "/" not in sectionhost:
-                if sectionhost == urlhost:
-                    section = sectionhost
-            elif sectionhost in url:
+            if (
+                "/" not in sectionhost
+                and sectionhost == urlhost
+                or "/" in sectionhost
+                and sectionhost in url
+            ):
                 section = sectionhost
             if section:
                 log.debug("bugzillarc: Found matching section: %s", section)

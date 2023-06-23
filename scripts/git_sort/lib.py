@@ -69,27 +69,24 @@ def check_series():
     try:
         retval = check()
     except IOError as err:
-        print("Error: could not read series file: %s" % (err,), file=sys.stderr)
+        print(f"Error: could not read series file: {err}", file=sys.stderr)
         return False
 
     if retval:
         return True
-    
+
     try:
         subprocess.check_output(("quilt", "--quiltrc", "-", "top",),
                                 stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as err:
-        if err.output.decode() == "No patches applied\n":
-            pass
-        else:
+        if err.output.decode() != "No patches applied\n":
             raise
     if check():
         return True
-    else:
-        print("Error: series file does not look like series.conf. "
-              "Make sure you are using the modified `quilt`; see "
-              "scripts/git_sort/README.md.", file=sys.stderr)
-        return False
+    print("Error: series file does not look like series.conf. "
+          "Make sure you are using the modified `quilt`; see "
+          "scripts/git_sort/README.md.", file=sys.stderr)
+    return False
 
 
 def repo_path():
@@ -231,10 +228,7 @@ def list_moved_patches(base_lines, remote_lines):
             base[name] = head
 
     for head, names in patches_per_section(remote_lines).items():
-        for name in names:
-            if name in base and head != base[name]:
-                result.append(name)
-
+        result.extend(name for name in names if name in base and head != base[name])
     return result
 
 
@@ -437,10 +431,7 @@ def series_sort(index, entries):
     Note that Head may be a "virtual head" like "out-of-tree patches".
     """
     def container(head):
-        if head in index.repo_heads:
-            return collections.defaultdict(list)
-        else:
-            return []
+        return collections.defaultdict(list) if head in index.repo_heads else []
 
     result = collections.OrderedDict([
         (head, container(head),)
@@ -493,10 +484,7 @@ def series_format(entries):
 
 
 def tag_needs_update(entry):
-    if entry.dest_head != git_sort.oot and entry.new_url is not None:
-        return True
-    else:
-        return False
+    return entry.dest_head != git_sort.oot and entry.new_url is not None
 
 
 def update_tags(index, entries):
@@ -564,11 +552,7 @@ def sequence_insert(series, rev, top):
     before, after = map(series_conf.filter_series, (before, after,))
     current_patches = flatten([before, series_conf.filter_series(inside), after])
 
-    if top is None:
-        top_index = 0
-    else:
-        top_index = current_patches.index(top) + 1
-
+    top_index = 0 if top is None else current_patches.index(top) + 1
     input_entries = parse_inside(index, inside, False)
     input_entries.append(new_entry)
 
@@ -579,11 +563,7 @@ def sequence_insert(series, rev, top):
         after,
     ])
     commit_pos = new_patches.index(marker)
-    if commit_pos == 0:
-        # should be inserted first in series
-        name = ""
-    else:
-        name = new_patches[commit_pos - 1]
+    name = "" if commit_pos == 0 else new_patches[commit_pos - 1]
     del new_patches[commit_pos]
 
     if new_patches != current_patches:
@@ -663,7 +643,7 @@ class OrderedSet(MutableSet):
 
     def __repr__(self):
         if not self:
-            return '%s()' % (self.__class__.__name__,)
+            return f'{self.__class__.__name__}()'
         return '%s(%r)' % (self.__class__.__name__, list(self))
 
     def __eq__(self, other):

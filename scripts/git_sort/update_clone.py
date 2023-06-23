@@ -79,10 +79,7 @@ def sync_remote_list(directory):
 
     mainline = str(git_sort.remotes[0].repo_url)
     def option(name):
-        if name == mainline:
-            return ""
-        else:
-            return " --no-tags"
+        return "" if name == mainline else " --no-tags"
 
     commands.extend(["git remote add%s %s %s\n" % (
         option(name), shlex.quote(name), shlex.quote(repr(new_remotes[name])),)

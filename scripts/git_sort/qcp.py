@@ -44,18 +44,23 @@ def format_import(references, tmpdir, dstdir, rev, poi=[]):
     name = os.path.basename(src)[5:]
     dst = os.path.join(dstdir, name)
     if os.path.exists(os.path.join("patches", dst)):
-        name = "%s-%s.patch" % (name[:-6], rev[:8],)
+        name = f"{name[:-6]}-{rev[:8]}.patch"
         dst = os.path.join(dstdir, name)
 
-    subprocess.check_call((os.path.join(lib.libdir(), "clean_header.sh"),
-                           "--commit=%s" % rev, "--reference=%s" % references,
-                           src,))
+    subprocess.check_call(
+        (
+            os.path.join(lib.libdir(), "clean_header.sh"),
+            f"--commit={rev}",
+            f"--reference={references}",
+            src,
+        )
+    )
     subprocess.check_call(("quilt", "import", "-P", dst, src,))
     # This will remind the user to run refresh_patch.sh
     target_dir = os.path.join(".pc", dstdir)
     if not os.path.isdir(target_dir):
         os.mkdir(target_dir)
-    lib.touch(os.path.join(".pc", "%s~refresh" % (dst,)))
+    lib.touch(os.path.join(".pc", f"{dst}~refresh"))
 
     return 0
 
@@ -122,8 +127,10 @@ if __name__ == "__main__":
                 destination = os.path.dirname(name)
                 references = " ".join(patch.get("References"))
         except exc.KSNotFound:
-            print("Error: no patch found which contains commit %s." %
-                  (fixes[:12],), file=sys.stderr)
+            print(
+                f"Error: no patch found which contains commit {fixes[:12]}.",
+                file=sys.stderr,
+            )
             sys.exit(1)
         os.chdir(cwd)
 

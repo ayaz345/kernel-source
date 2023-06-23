@@ -79,9 +79,7 @@ class _RHBugzillaConverters(object):
         old = query.copy()
 
         def split_comma(_v):
-            if isinstance(_v, list):
-                return _v
-            return _v.split(",")
+            return _v if isinstance(_v, list) else _v.split(",")
 
         if 'bug_id' in query:
             query['id'] = split_comma(query.pop('bug_id'))

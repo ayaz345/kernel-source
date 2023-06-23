@@ -22,10 +22,14 @@ class BugzillaError(Exception):
         XMLRPC Fault, or any other exception type that's raised from bugzilla
         interaction
         """
-        for propname in ["faultCode", "code"]:
-            if hasattr(exc, propname):
-                return getattr(exc, propname)
-        return None
+        return next(
+            (
+                getattr(exc, propname)
+                for propname in ["faultCode", "code"]
+                if hasattr(exc, propname)
+            ),
+            None,
+        )
 
     def __init__(self, message, code=None):
         """
@@ -34,5 +38,5 @@ class BugzillaError(Exception):
         """
         self.code = code
         if self.code:
-            message += " (code=%s)" % self.code
+            message += f" (code={self.code})"
         Exception.__init__(self, message)

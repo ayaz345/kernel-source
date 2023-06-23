@@ -56,11 +56,10 @@ def open_without_clobber(name, *args):
         try:
             fd = os.open(name, os.O_CREAT | os.O_EXCL, 0o666)
         except OSError as err:
-            if err.errno == errno.EEXIST:
-                name = "%s.%i" % (orig_name, count)
-                count += 1
-            else:  # pragma: no cover
+            if err.errno != errno.EEXIST:
                 raise IOError(err.errno, err.strerror, err.filename) from None
+            name = "%s.%i" % (orig_name, count)
+            count += 1
     fobj = open(name, *args)
     if fd != fobj.fileno():
         os.close(fd)
@@ -98,8 +97,11 @@ def _setup_root_parser():
         default_url = DEFAULT_BZ
 
     # General bugzilla connection options
-    p.add_argument('--bugzilla', default=default_url,
-            help="bugzilla URI. default: %s" % default_url)
+    p.add_argument(
+        '--bugzilla',
+        default=default_url,
+        help=f"bugzilla URI. default: {default_url}",
+    )
     p.add_argument("--nosslverify", dest="sslverify",
                  action="store_false", default=True,
                  help="Don't error on invalid bugzilla SSL certificate")
@@ -447,15 +449,13 @@ def _merge_field_opts(query, fields, parser):
             f, v = f.split('=', 1)
             query[f] = v
         except Exception:
-            parser.error("Invalid field argument provided: %s" % (f))
+            parser.error(f"Invalid field argument provided: {f}")
 
 
 def _do_query(bz, opt, parser):
     q = {}
 
-    # Parse preconstructed queries.
-    u = opt.from_url
-    if u:
+    if u := opt.from_url:
         q = bz.url_to_query(u)
 
     if opt.components_file:
@@ -463,7 +463,7 @@ def _do_query(bz, opt, parser):
         # This can be made more robust
         clist = []
         f = open(opt.components_file, 'r')
-        for line in f.readlines():
+        for line in f:
             line = line.rstrip("\n")
             clist.append(line)
         opt.component = clist
@@ -471,20 +471,20 @@ def _do_query(bz, opt, parser):
     if opt.status:
         val = opt.status
         stat = val
-        if val == 'ALL':
+        if stat == 'ALL':
             # leaving this out should return bugs of any status
             stat = None
-        elif val == 'DEV':
+        elif stat == 'DEV':
             # Alias for all development bug statuses
             stat = ['NEW', 'ASSIGNED', 'NEEDINFO', 'ON_DEV',
                 'MODIFIED', 'POST', 'REOPENED']
-        elif val == 'QE':
+        elif stat == 'QE':
             # Alias for all QE relevant bug statuses
             stat = ['ASSIGNED', 'ON_QA', 'FAILS_QA', 'PASSES_QA']
-        elif val == 'EOL':
+        elif stat == 'EOL':
             # Alias for EndOfLife bug statuses
             stat = ['VERIFIED', 'RELEASE_PENDING', 'RESOLVED']
-        elif val == 'OPEN':
+        elif stat == 'OPEN':
             # non-RESOLVED statuses
             stat = ['NEW', 'ASSIGNED', 'MODIFIED', 'ON_DEV', 'ON_QA',
                 'VERIFIED', 'RELEASE_PENDING', 'POST']
@@ -511,7 +511,7 @@ def _do_query(bz, opt, parser):
         include_fields = []
         for fieldname, rest in format_field_re.findall(opt.outputformat):
             if fieldname == "whiteboard" and rest:
-                fieldname = rest + "_" + fieldname
+                fieldname = f"{rest}_{fieldname}"
             elif fieldname == "flag":
                 fieldname = "flags"
             elif fieldname == "cve":
@@ -661,12 +661,12 @@ def _do_info(bz, opt):
         proddict = bz.getproducts()[0]
         for v in proddict['versions']:
             if not opt.active_versions or v["is_active"]:
-                print(str(v["name"] or ''))
+                print((v["name"] or ''))
 
     elif opt.component_owners:
         details = bz.getcomponentsdetails(productname)
         for c in sorted(_filter_components(details)):
-            print("%s: %s" % (c, details[c]['default_assigned_to']))
+            print(f"{c}: {details[c]['default_assigned_to']}")
 
 
 def _convert_to_outputformat(output):
@@ -698,7 +698,7 @@ def _convert_to_outputformat(output):
         fmt += "[%{target_milestone}] %{flags} %{cve}"
 
     else:  # pragma: no cover
-        raise RuntimeError("Unknown output type '%s'" % output)
+        raise RuntimeError(f"Unknown output type '{output}'")
 
     return fmt
 
@@ -708,12 +708,11 @@ def _xmlrpc_converter(obj):
         # xmlrpc DateTime object. Convert to date format that
         # bugzilla REST API outputs
         dobj = datetime.datetime.strptime(str(obj), '%Y%m%dT%H:%M:%S')
-        return dobj.isoformat() + "Z"
+        return f"{dobj.isoformat()}Z"
     if "Binary" in str(obj.__class__):
         # xmlrpc Binary object. Convert to base64
         return base64.b64encode(obj.data).decode("utf-8")
-    raise RuntimeError(
-        "Unexpected JSON conversion class=%s" % obj.__class__)
+    raise RuntimeError(f"Unexpected JSON conversion class={obj.__class__}")
 
 
 def _format_output_json(buglist):
@@ -724,14 +723,14 @@ def _format_output_json(buglist):
 
 def _format_output_raw(buglist):
     for b in buglist:
-        print("Bugzilla %s: " % b.bug_id)
+        print(f"Bugzilla {b.bug_id}: ")
         SKIP_NAMES = ["bugzilla"]
         for attrname in sorted(b.__dict__):
             if attrname in SKIP_NAMES:
                 continue
             if attrname.startswith("_"):
                 continue
-            print("ATTRIBUTE[%s]: %s" % (attrname, b.__dict__[attrname]))
+            print(f"ATTRIBUTE[{attrname}]: {b.__dict__[attrname]}")
         print("\n\n")
 
 
@@ -742,7 +741,7 @@ def _bug_field_repl_cb(bz, b, matchobj):
     (fieldname, rest) = matchobj.groups()
 
     if fieldname == "whiteboard" and rest:
-        fieldname = rest + "_" + fieldname
+        fieldname = f"{rest}_{fieldname}"
 
     if fieldname == "flag" and rest:
         val = b.get_flag_status(rest)
@@ -756,10 +755,9 @@ def _bug_field_repl_cb(bz, b, matchobj):
             if fieldname == "flags_requestee":
                 if requestee == "":
                     continue
-                tmpstr.append("%s" % requestee)
+                tmpstr.append(f"{requestee}")
             else:
-                tmpstr.append("%s%s%s" %
-                        (f['name'], f['status'], requestee))
+                tmpstr.append(f"{f['name']}{f['status']}{requestee}")
 
         val = ",".join(tmpstr)
 
@@ -778,11 +776,13 @@ def _bug_field_repl_cb(bz, b, matchobj):
         val = ",".join(cves)
 
     elif fieldname == "comments":
-        val = ""
-        for c in getattr(b, "comments", []):
-            val += ("\n* %s - %s:\n%s\n" % (c['time'],
-                     c.get("creator", c.get("author", "")), c['text']))
-
+        val = "".join(
+            (
+                "\n* %s - %s:\n%s\n"
+                % (c['time'], c.get("creator", c.get("author", "")), c['text'])
+            )
+            for c in getattr(b, "comments", [])
+        )
     elif fieldname == "external_bugs":
         val = ""
         for e in getattr(b, "external_bugs", []):
@@ -841,9 +841,7 @@ def _parse_triset(vallist, checkplus=True, checkminus=True, checkequal=True,
     def make_list(v):
         if not v:
             return []
-        if splitcomma:
-            return v.split(",")
-        return [v]
+        return v.split(",") if splitcomma else [v]
 
     for val in isinstance(vallist, list) and vallist or [vallist]:
         val = val or ""
