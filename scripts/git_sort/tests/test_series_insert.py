@@ -116,9 +116,12 @@ class TestSeriesInsert(unittest.TestCase):
 
         content = []
         with open("patches.suse/mainline-1.patch") as f:
-            for line in f:
-                if not line.startswith("Git-commit: ") and not line.startswith("Patch-mainline: "):
-                    content.append(line)
+            content.extend(
+                line
+                for line in f
+                if not line.startswith("Git-commit: ")
+                and not line.startswith("Patch-mainline: ")
+            )
         with open("patches.suse/mainline-1.patch", mode="w+") as f:
             f.writelines(content)
 

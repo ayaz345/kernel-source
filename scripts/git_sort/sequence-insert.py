@@ -26,6 +26,7 @@ prints out which patch that is. Use in conjunction with sequence-patch.sh:
     kernel-source$ ./scripts/sequence-patch.sh $(./scripts/git_sort/sequence-insert.py 5c8227d0d3b1)
 """
 
+
 import argparse
 import os
 import sys
@@ -45,7 +46,7 @@ if __name__ == "__main__":
         (name, delta,) = lib.sequence_insert(open("series.conf"), args.rev,
                                              None)
     except exc.KSException as err:
-        print("Error: %s" % (err,), file=sys.stderr)
+        print(f"Error: {err}", file=sys.stderr)
         sys.exit(1)
 
     print(name)

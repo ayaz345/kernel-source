@@ -23,6 +23,7 @@ Script to insert new patches in series.conf according to the upstream order of
 commits that the patches backport.
 """
 
+
 import argparse
 import collections
 import sys
@@ -51,14 +52,14 @@ if __name__ == "__main__":
         with open("series.conf") as f:
             lines = f.readlines()
     except IOError as err:
-        print("Error: could not open series file, %s" % (err,), file=sys.stderr)
+        print(f"Error: could not open series file, {err}", file=sys.stderr)
         sys.exit(1)
 
     try:
         before, inside, after = series_conf.split(lines)
         current_entries = lib.parse_inside(index, inside, False)
     except exc.KSError as err:
-        print("Error: %s" % (err,), file=sys.stderr)
+        print(f"Error: {err}", file=sys.stderr)
         sys.exit(1)
 
     if list(filter(lib.tag_needs_update, current_entries)):
@@ -67,7 +68,7 @@ if __name__ == "__main__":
               "result before adding new patches.", file=sys.stderr)
         sys.exit(1)
 
-    current_names = set([entry.name for entry in current_entries])
+    current_names = {entry.name for entry in current_entries}
     current_revs = {rev : entry.name
                     for entry in current_entries
                         if entry.dest_head != git_sort.oot
@@ -84,7 +85,7 @@ if __name__ == "__main__":
         try:
             entry.from_patch(index, name, git_sort.oot, True)
         except exc.KSError as err:
-            print("Error: %s" % (err,), file=sys.stderr)
+            print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)
         if entry.dest_head != git_sort.oot:
             for rev in entry.revs:
@@ -101,13 +102,12 @@ if __name__ == "__main__":
     try:
         sorted_entries = lib.series_sort(index, current_entries + new_entries)
     except exc.KSError as err:
-        print("Error: %s" % (err,), file=sys.stderr)
+        print(f"Error: {err}", file=sys.stderr)
         sys.exit(1)
 
     cur_sorted_entries = collections.OrderedDict()
     for head, lines in list(sorted_entries.items()):
-        current_lines = [line for line in lines if line not in new_lines]
-        if current_lines:
+        if current_lines := [line for line in lines if line not in new_lines]:
             cur_sorted_entries[head] = current_lines
 
     cur_inside = lib.flatten([
@@ -140,5 +140,5 @@ if __name__ == "__main__":
     try:
         lib.update_tags(index, list(filter(lib.tag_needs_update, new_entries)))
     except exc.KSError as err:
-        print("Error: %s" % (err,), file=sys.stderr)
+        print(f"Error: {err}", file=sys.stderr)
         sys.exit(1)

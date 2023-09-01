@@ -57,8 +57,7 @@ if __name__ == "__main__":
         with series_conf.find_commit(commit, series) as (name, patch,):
             print("Commit %s already present in patch\n\t%s" % (
                 commit[:12], name,))
-            references = " ".join(patch.get("References"))
-            if references:
+            if references := " ".join(patch.get("References")):
                 print("for\n\t%s" % (references,))
 
             try:

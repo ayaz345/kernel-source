@@ -30,11 +30,13 @@ def format_sanitized_subject(message):
     Reimplemented from the similarly named function in the git source.
     """
     def is_title_char(c):
-        if ((c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z') or
-            (c >= '0' and c <= '9') or c == '.' or c == '_'):
-            return True
-        else:
-            return False
+        return (
+            (c >= 'a' and c <= 'z')
+            or (c >= 'A' and c <= 'Z')
+            or (c >= '0' and c <= '9')
+            or c == '.'
+            or c == '_'
+        )
 
     result = []
     space = False
@@ -51,10 +53,10 @@ def format_sanitized_subject(message):
             space = False
             if c == ".":
                 while i + 1 < end and message[i + 1] == ".":
-                    i = i + 1
+                    i += 1
         else:
             space = True
-        i = i + 1
+        i += 1
     return "".join(result[:52])
 
 
@@ -80,15 +82,14 @@ def format_patch(commit, mainline=None, repo=None, references=None,
             f.write("Patch-mainline: Not yet, to be submitted by partner developer\n")
         if references is not None:
             f.write("References: %s\n" % (references,))
-        f.write("Subject: %s" % (commit.message,))
+        f.write(f"Subject: {commit.message}")
         if not commit.message.endswith("\n"):
             f.write("\n")
             if commit.message.find("\n") == -1:
                 f.write("\n")
-        else:
-            if commit.message.count("\n") == 1:
-                # ends with a newline but consists only of a subject.
-                f.write("\n")
+        elif commit.message.count("\n") == 1:
+            # ends with a newline but consists only of a subject.
+            f.write("\n")
         f.write("---\n")
         args = []
         if len(commit.parents):

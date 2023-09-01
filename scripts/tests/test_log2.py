@@ -20,8 +20,7 @@ class TestSpliceSeries(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        print("Coverage report in %s. Press enter when done with it." %
-              (cls.covdir,))
+        print(f"Coverage report in {cls.covdir}. Press enter when done with it.")
         sys.stdin.readline()
         shutil.rmtree(cls.covdir)
 

@@ -33,6 +33,7 @@ select the lines and filter them through the script:
     :'<,'>! ~/<path>/series_sort.py
 """
 
+
 import argparse
 import os
 import sys
@@ -85,7 +86,7 @@ if __name__ == "__main__":
         try:
             f = open(path)
         except FileNotFoundError as err:
-            print("Error: %s" % (err,), file=sys.stderr)
+            print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)
         series_path = os.path.abspath(path)
     lines = f.readlines()
@@ -104,19 +105,19 @@ if __name__ == "__main__":
             # no sorted section
             sys.exit(0)
         else:
-            print("Error: %s" % (err,), file=sys.stderr)
+            print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)
 
     try:
         input_entries = lib.parse_inside(index, inside, args.upstream)
     except exc.KSError as err:
-        print("Error: %s" % (err,), file=sys.stderr)
+        print(f"Error: {err}", file=sys.stderr)
         sys.exit(1)
 
     try:
         sorted_entries = lib.series_sort(index, input_entries)
     except exc.KSError as err:
-        print("Error: %s" % (err,), file=sys.stderr)
+        print(f"Error: {err}", file=sys.stderr)
         sys.exit(1)
 
     new_inside = lib.flatten([
@@ -142,13 +143,10 @@ if __name__ == "__main__":
             after,
         ])
 
-        if filter_mode:
-            f = sys.stdout
-        else:
-            f = open(series_path, mode="w")
+        f = sys.stdout if filter_mode else open(series_path, mode="w")
         f.writelines(output)
         try:
             lib.update_tags(index, to_update)
         except exc.KSError as err:
-            print("Error: %s" % (err,), file=sys.stderr)
+            print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)

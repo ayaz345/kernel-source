@@ -56,9 +56,7 @@ class Bug(object):
                                           self.assigned_to, self.summary)
 
     def __repr__(self):
-        url = ""
-        if self.bugzilla:
-            url = self.bugzilla.url
+        url = self.bugzilla.url if self.bugzilla else ""
         return '<Bug #%i on %s at %#x>' % (self.bug_id, url, id(self))
 
     def __getattr__(self, name):
@@ -93,7 +91,7 @@ class Bug(object):
             self.refresh(extra_fields=[name])
             refreshed = True
 
-        msg = ("Bug object has no attribute '%s'." % name)
+        msg = f"Bug object has no attribute '{name}'."
         if not self.autorefresh:
             msg += ("\nIf '%s' is a bugzilla attribute, it may not have "
                     "been cached when the bug was fetched. You may want "
@@ -205,12 +203,14 @@ class Bug(object):
           to True if you want that comment to be private.
         """
         # Note: fedora bodhi uses this function
-        vals = self.bugzilla.build_update(comment=comment,
-                                          comment_private=isprivate,
-                                          resolution=resolution,
-                                          dupe_of=dupeid,
-                                          fixed_in=fixedin,
-                                          status=str("RESOLVED"))
+        vals = self.bugzilla.build_update(
+            comment=comment,
+            comment_private=isprivate,
+            resolution=resolution,
+            dupe_of=dupeid,
+            fixed_in=fixedin,
+            status="RESOLVED",
+        )
         log.debug("close: update=%s", vals)
 
         return self.bugzilla.update_bugs(self.bug_id, vals)
@@ -302,20 +302,14 @@ class Bug(object):
         Older RHBugzilla returned a lot more info here, but it was
         non-upstream and is now gone.
         """
-        for t in self.flags:
-            if t['name'] == name:
-                return t
-        return None
+        return next((t for t in self.flags if t['name'] == name), None)
 
     def get_flags(self, name):
         """
         Return flag value information for a specific flag
         """
         ft = self.get_flag_type(name)
-        if not ft:
-            return None
-
-        return [ft]
+        return None if not ft else [ft]
 
     def get_flag_status(self, name):
         """
@@ -344,9 +338,7 @@ class Bug(object):
         :param flags: Dictionary of the form {"flagname": "status"}, example
             {"needinfo": "?", "devel_ack": "+"}
         """
-        flaglist = []
-        for key, value in flags.items():
-            flaglist.append({"name": key, "status": value})
+        flaglist = [{"name": key, "status": value} for key, value in flags.items()]
         return self.bugzilla.update_bugs([self.bug_id],
             self.bugzilla.build_update(flags=flaglist))
 
@@ -400,9 +392,7 @@ class User(object):
 
         self.groups = kwargs.get('groups', {})
         self.groupnames = []
-        for g in self.groups:
-            if "name" in g:
-                self.groupnames.append(g["name"])
+        self.groupnames.extend(g["name"] for g in self.groups if "name" in g)
         self.groupnames.sort()
 
 

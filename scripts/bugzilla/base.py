@@ -151,13 +151,10 @@ class Bugzilla(object):
             path = "/".join(path.split("/")[1:]) or None
 
         if not path:
-            path = 'xmlrpc.cgi'
-            if force_rest:
-                path = "rest/"
-
-        newurl = urllib.parse.urlunparse(
-            (scheme, netloc, path, params, query, fragment))
-        return newurl
+            path = "rest/" if force_rest else 'xmlrpc.cgi'
+        return urllib.parse.urlunparse(
+            (scheme, netloc, path, params, query, fragment)
+        )
 
     @staticmethod
     def get_rcfile_default_url():
@@ -325,7 +322,7 @@ class Bugzilla(object):
         return ret
 
     def _get_user_agent(self):
-        return 'python-bugzilla/%s' % __version__
+        return f'python-bugzilla/{__version__}'
     user_agent = property(_get_user_agent)
 
     @property
@@ -441,7 +438,7 @@ class Bugzilla(object):
     def _set_bz_version(self, version):
         self._cache.version_raw = version
         try:
-            major, minor = [int(i) for i in version.split(".")[0:2]]
+            major, minor = [int(i) for i in version.split(".")[:2]]
         except Exception:
             log.debug("version doesn't match expected format X.Y.Z, "
                     "assuming 5.0", exc_info=True)
@@ -614,8 +611,9 @@ class Bugzilla(object):
             return ret
         except Exception as e:
             log.debug("Login exception: %s", str(e), exc_info=True)
-            raise BugzillaError("Login failed: %s" %
-                    BugzillaError.get_bugzilla_error_string(e)) from None
+            raise BugzillaError(
+                f"Login failed: {BugzillaError.get_bugzilla_error_string(e)}"
+            ) from None
 
     def interactive_save_api_key(self):
         """
@@ -642,7 +640,7 @@ class Bugzilla(object):
 
         msg = "Login successful."
         if wrote_filename:
-            msg += " API key written to %s" % wrote_filename
+            msg += f" API key written to {wrote_filename}"
         print(msg)
 
     def interactive_login(self, user=None, password=None, force=False,
@@ -674,7 +672,7 @@ class Bugzilla(object):
             if not self.tokenfile:
                 msg += " Token not saved to disk."
             else:
-                msg += " Token cache saved to %s" % self.tokenfile
+                msg += f" Token cache saved to {self.tokenfile}"
             if self._get_version() >= 5.0:
                 msg += "\nToken usage is deprecated. "
                 msg += "Consider using bugzilla API keys instead. "
@@ -787,7 +785,7 @@ class Bugzilla(object):
                 raw = self._backend.product_get_selectable()
 
             if raw is None:
-                raise RuntimeError("Unknown ptype=%s" % ptype)
+                raise RuntimeError(f"Unknown ptype={ptype}")
             ids = raw['ids']
             log.debug("For ptype=%s found ids=%s", ptype, ids)
 
@@ -885,10 +883,7 @@ class Bugzilla(object):
                                   include_fields=["name", "id", "components"])
             proddict = self._lookup_product_in_cache(product)
 
-        ret = {}
-        for compdict in proddict["components"]:
-            ret[compdict["name"]] = compdict
-        return ret
+        return {compdict["name"]: compdict for compdict in proddict["components"]}
 
     def getcomponentdetails(self, product, component, force_refresh=False):
         """
@@ -918,14 +913,13 @@ class Bugzilla(object):
                 include_fields=["name", "id", "components.name"])
             proddict = self._lookup_product_in_cache(product)
             if "id" not in proddict:
-                raise BugzillaError("Product '%s' not found" % product)
+                raise BugzillaError(f"Product '{product}' not found")
             product_id = proddict["id"]
 
         if product_id not in self._cache.component_names:
             names = []
             for comp in proddict.get("components", []):
-                name = comp.get("name")
-                if name:
+                if name := comp.get("name"):
                     names.append(name)
             self._cache.component_names[product_id] = names
 
@@ -950,10 +944,7 @@ class Bugzilla(object):
         if update:
             names = {"product": data.pop("product"),
                      "component": data.pop("component")}
-            updates = {}
-            for k in list(data.keys()):
-                updates[k] = data.pop(k)
-
+            updates = {k: data.pop(k) for k in list(data.keys())}
             data["names"] = [names]
             data["updates"] = updates
 
@@ -1040,13 +1031,15 @@ class Bugzilla(object):
         Extra fields that need to be explicitly
         requested from Bug.get in order for the data to be returned.
         """
-        rhbz_extra_fields = [
-            "comments", "description",
-            "external_bugs", "flags", "sub_components",
-            "tags",
-        ]
         if self._is_redhat_bugzilla:
-            return rhbz_extra_fields
+            return [
+                "comments",
+                "description",
+                "external_bugs",
+                "flags",
+                "sub_components",
+                "tags",
+            ]
         return []
 
     def _supports_getbug_extra_fields(self):
@@ -1070,9 +1063,7 @@ class Bugzilla(object):
         aliases = []
 
         def _alias_or_int(_v):
-            if str(_v).isdigit():
-                return int(_v), None
-            return None, str(_v)
+            return (int(_v), None) if str(_v).isdigit() else (None, str(_v))
 
         for idstr in idlist:
             idint, alias = _alias_or_int(idstr)
@@ -1300,10 +1291,7 @@ class Bugzilla(object):
             include_fields, exclude_fields, extra_fields))
 
         # Strip out None elements in the dict
-        for k, v in query.copy().items():
-            if v is None:
-                del(query[k])
-
+        query = {k: v for k, v in query.items() if v is not None}
         self.pre_translation(query)
         return query
 
@@ -1673,8 +1661,7 @@ class Bugzilla(object):
         # needed though
         ignore = bugid
 
-        flags = {"name": flagname}
-        flags.update(kwargs)
+        flags = {"name": flagname} | kwargs
         attachment_ids = [int(attachid)]
         update = {'flags': [flags]}
 
@@ -1901,7 +1888,7 @@ class Bugzilla(object):
         if action == "rem":
             action = "remove"
         if action not in ["add", "remove", "set"]:
-            raise BugzillaError("Unknown user permission action '%s'" % action)
+            raise BugzillaError(f"Unknown user permission action '{action}'")
 
         update = {
             "names": listify(user),
@@ -1933,8 +1920,7 @@ class Bugzilla(object):
             Code 805: logged in user do not have enough priviledges to view
                 groups.
         """
-        params = {"membership": membership}
-        params['names'] = listify(names)
+        params = {"membership": membership, 'names': listify(names)}
         return self._backend.group_get(params)
 
     def getgroup(self, name, membership=False):

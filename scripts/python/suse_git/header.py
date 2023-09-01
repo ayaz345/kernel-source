@@ -196,17 +196,14 @@ class FormatError(ValidationError):
         name = name.capitalize()
         if error is None:
             error = "invalid value"
-        msg = "%s: `%s': %s." % (name, value, error)
+        msg = f"{name}: `{value}': {error}."
         super(FormatError, self).__init__(name, msg)
 
 class MissingTagError(ValidationError):
     def __init__(self, tag, requires):
         if not tag:
             tag = Tag("Policy", None)
-        msg = "%s%s requires %s%s." % (tag.name, \
-                    " (%s)" % tag.tagtype if tag.tagtype else "", \
-                    requires['name'], \
-                    " (%s)" % requires['type'] if 'type' in requires else "")
+        msg = f"""{tag.name}{f" ({tag.tagtype})" if tag.tagtype else ""} requires {requires['name']}{f" ({requires['type']})" if 'type' in requires else ""}."""
         self.target = [requires]
         super(MissingTagError, self).__init__(tag.name, msg)
 
@@ -214,32 +211,35 @@ class MissingMultiTagError(MissingTagError):
     def __init__(self, tag, requires):
         if not tag:
             tag = Tag("Policy", None)
-        msg = "%s%s requires %s." % (tag.name, \
-                " (%s)" % tag.tagtype if tag.tagtype else "", \
-                " or ".join(["%s%s" % (req['name'], \
-                    " (%s)" % req['type'] if 'type' in req else "") for req in requires]))
+        msg = "%s%s requires %s." % (
+            tag.name,
+            f" ({tag.tagtype})" if tag.tagtype else "",
+            " or ".join(
+                [
+                    f"""{req['name']}{f" ({req['type']})" if 'type' in req else ""}"""
+                    for req in requires
+                ]
+            ),
+        )
         self.target = requires
         super(MissingTagError, self).__init__(tag.name, msg)
 
 class ExcludedTagError(ValidationError):
     def __init__(self, tag, excludes):
-        msg = "%s%s excludes %s%s." % (tag.name,
-                " (%s)" % tag.tagtype if tag.tagtype else "", \
-                excludes['name'], \
-                " (%s)" % excludes['type'] if 'type' in excludes else "")
+        msg = f"""{tag.name}{f" ({tag.tagtype})" if tag.tagtype else ""} excludes {excludes['name']}{f" ({excludes['type']})" if 'type' in excludes else ""}."""
         super(ExcludedTagError, self).__init__(tag.name, msg)
 
 class DuplicateTagError(ValidationError):
     def __init__(self, name):
         name = name.capitalize()
-        msg = "%s must only be used once, even if it is identical." % name
+        msg = f"{name} must only be used once, even if it is identical."
         super(DuplicateTagError, self).__init__(name, msg)
     pass
 
 class EmptyTagError(ValidationError):
     def __init__(self, name):
         name = name.capitalize()
-        msg = "%s: Value cannot be empty." % name
+        msg = f"{name}: Value cannot be empty."
         super(EmptyTagError, self).__init__(name, msg)
 
 class HeaderException(patch.PatchException):
@@ -263,17 +263,12 @@ class Tag:
         self.valid = False
 
     def __str__(self):
-        return "%s: %s" % (self.name, self.value)
+        return f"{self.name}: {self.value}"
 
     def __repr__(self):
-        type = "<none>"
-        if self.tagtype:
-            type = self.tagtype
-        valid = "No"
-        if self.valid:
-            valid = "Yes"
-        return "<Tag: name=%s value='%s' type='%s' valid='%s'>" % \
-                (self.name, self.value, type, valid)
+        type = self.tagtype if self.tagtype else "<none>"
+        valid = "Yes" if self.valid else "No"
+        return f"<Tag: name={self.name} value='{self.value}' type='{type}' valid='{valid}'>"
 
     def match_req(self, req):
         if self.name == req['name']:
@@ -302,17 +297,17 @@ class HeaderChecker(patch.PatchChecker):
         self.do_patch()
 
     def get_rulename(self, ruleset, rulename):
-        if rulename in ruleset:
-            if self.kabi:
-                 kabi_rule = "%s_on_kabi" % rulename
-                 if kabi_rule in ruleset:
-                     return kabi_rule
-            if self.updating:
-                 updating_rule = "%s_on_update" % rulename
-                 if updating_rule in ruleset:
-                     return updating_rule
-            return rulename
-        return None
+        if rulename not in ruleset:
+            return None
+        if self.kabi:
+            kabi_rule = f"{rulename}_on_kabi"
+            if kabi_rule in ruleset:
+                return kabi_rule
+        if self.updating:
+            updating_rule = f"{rulename}_on_update"
+            if updating_rule in ruleset:
+                return updating_rule
+        return rulename
 
     def handle_requires(self, tag, ruleset, rulename):
         target = getattr(self, rulename)
@@ -331,7 +326,7 @@ class HeaderChecker(patch.PatchChecker):
             }
             if len(s) > 1:
                 new_req['type'] = s[1]
-            if not tag in target:
+            if tag not in target:
                 target[tag] = []
             target[tag].append(new_req)
 
@@ -340,8 +335,7 @@ class HeaderChecker(patch.PatchChecker):
             if diffstart.match(line):
                 break
 
-            m = tag_regex.match(line)
-            if m:
+            if m := tag_regex.match(line):
                 tag = Tag(m.group(1), m.group(2))
 
                 if tag.name not in tag_map:
@@ -446,10 +440,7 @@ class HeaderChecker(patch.PatchChecker):
 
         for entry in tag_map:
             if 'required' in tag_map[entry]:
-                found = False
-                for tag in self.tags:
-                    if entry == tag.name:
-                        found = True
+                found = any(entry == tag.name for tag in self.tags)
                 if not found:
                     required = True
                     if self.kabi and 'required_on_kabi' in tag_map[entry]:

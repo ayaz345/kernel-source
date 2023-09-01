@@ -88,14 +88,13 @@ class _BackendREST(_BackendBase):
         data = paramdict.copy()
         data["id"] = listify(bug_ids)
         data["alias"] = listify(aliases)
-        ret = self._get("/bug", data)
-        return ret
+        return self._get("/bug", data)
 
     def bug_attachment_get(self, attachment_ids, paramdict):
         # XMLRPC supported mutiple fetch at once, but not REST
         ret = {}
         for attid in listify(attachment_ids):
-            out = self._get("/bug/attachment/%s" % attid, paramdict)
+            out = self._get(f"/bug/attachment/{attid}", paramdict)
             _update_key(ret, out, "attachments")
             _update_key(ret, out, "bugs")
         return ret
@@ -104,7 +103,7 @@ class _BackendREST(_BackendBase):
         # XMLRPC supported mutiple fetch at once, but not REST
         ret = {}
         for bugid in listify(bug_ids):
-            out = self._get("/bug/%s/attachment" % bugid, paramdict)
+            out = self._get(f"/bug/{bugid}/attachment", paramdict)
             _update_key(ret, out, "attachments")
             _update_key(ret, out, "bugs")
         return ret
@@ -113,25 +112,24 @@ class _BackendREST(_BackendBase):
         if data is not None and "data" not in paramdict:
             paramdict["data"] = base64.b64encode(data).decode("utf-8")
         paramdict["ids"] = listify(bug_ids)
-        return self._post("/bug/%s/attachment" % paramdict["ids"][0],
-                paramdict)
+        return self._post(f'/bug/{paramdict["ids"][0]}/attachment', paramdict)
 
     def bug_attachment_update(self, attachment_ids, paramdict):
         paramdict["ids"] = listify(attachment_ids)
-        return self._put("/bug/attachment/%s" % paramdict["ids"][0], paramdict)
+        return self._put(f'/bug/attachment/{paramdict["ids"][0]}', paramdict)
 
     def bug_comments(self, bug_ids, paramdict):
         # XMLRPC supported mutiple fetch at once, but not REST
         ret = {}
         for bugid in bug_ids:
-            out = self._get("/bug/%s/comment" % bugid, paramdict)
+            out = self._get(f"/bug/{bugid}/comment", paramdict)
             _update_key(ret, out, "bugs")
         return ret
     def bug_history(self, bug_ids, paramdict):
         # XMLRPC supported mutiple fetch at once, but not REST
         ret = {"bugs": []}
         for bugid in bug_ids:
-            out = self._get("/bug/%s/history" % bugid, paramdict)
+            out = self._get(f"/bug/{bugid}/history", paramdict)
             ret["bugs"].extend(out.get("bugs", []))
         return ret
 
@@ -140,7 +138,7 @@ class _BackendREST(_BackendBase):
     def bug_update(self, bug_ids, paramdict):
         data = paramdict.copy()
         data["ids"] = listify(bug_ids)
-        return self._put("/bug/%s" % data["ids"][0], data)
+        return self._put(f'/bug/{data["ids"][0]}', data)
     def bug_update_tags(self, bug_ids, paramdict):
         raise BugzillaError("No REST API available for bug_update_tags")
 
@@ -152,7 +150,7 @@ class _BackendREST(_BackendBase):
         if "names" in paramdict:
             apiurl = ("%(product)s/%(component)s" %
                     listify(paramdict["names"])[0])
-        return self._put("/component/%s" % apiurl, paramdict)
+        return self._put(f"/component/{apiurl}", paramdict)
 
     def externalbugs_add(self, paramdict):  # pragma: no cover
         raise BugzillaError(
@@ -190,4 +188,4 @@ class _BackendREST(_BackendBase):
             urlid = listify(paramdict["ids"])[0]  # pragma: no cover
         if "names" in paramdict:
             urlid = listify(paramdict["names"])[0]
-        return self._put("/user/%s" % urlid, paramdict)
+        return self._put(f"/user/{urlid}", paramdict)

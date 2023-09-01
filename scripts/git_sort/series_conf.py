@@ -63,9 +63,9 @@ def split(series):
                 whitespace = []
             comments.append(line)
 
-            if current == before and l.lower() == "# %s" % (start_text,):
+            if current == before and l.lower() == f"# {start_text}":
                 current = inside
-            elif current == inside and l.lower() == "# %s" % (end_text,):
+            elif current == inside and l.lower() == f"# {end_text}":
                 current = after
         else:
             if comments:
@@ -94,10 +94,7 @@ def split(series):
 def filter_patches(line):
     line = line.strip()
 
-    if line == "" or line.startswith(("#", "-", "+",)):
-        return False
-    else:
-        return True
+    return line != "" and not line.startswith(("#", "-", "+",))
 
 
 def firstword(value):
@@ -142,10 +139,7 @@ if __name__ == "__main__":
                         help="series.conf file. Default: read input from stdin.")
     args = parser.parse_args()
 
-    if args.series is not None:
-        f = open(args.series)
-    else:
-        f = sys.stdin
+    f = open(args.series) if args.series is not None else sys.stdin
     lines = f.readlines()
 
     try:
